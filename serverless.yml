@@ -14,8 +14,8 @@ provider:
   environment: ${file(env.yml):${self:provider.stage}}
 
 functions:
-  hello:
-    handler: api/handler.hello
+  echo:
+    handler: api/index.echo
     events:
       - http:
           path: /
