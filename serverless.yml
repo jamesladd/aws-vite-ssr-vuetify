@@ -2,21 +2,129 @@ service: aws-vite-ssr-vuetify
 
 frameworkVersion: '2'
 
+plugins:
+  - serverless-domain-manager
+  - serverless-s3-sync
+  - serverless-api-gateway-caching
+
 provider:
   name: aws
   runtime: nodejs14.x
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
   versionFunctions: false
-  lambdaHashingVersion: '20201221'
+  lambdaHashingVersion: 20201221
   apiGateway:
     shouldStartNameWithService: true
   environment: ${file(env.yml):${self:provider.stage}}
 
+package:
+  exclude:
+    - static/**
+
+custom:
+  env: ${self:provider.environment}
+  customDomain:
+    domainName: ${self:custom.env.DOMAIN}
+    certificateName: ${self:custom.env.CERTIFICATE_NAME}
+    createRoute53Record: true
+    endpointType: 'regional'
+    securityPolicy: tls_1_2
+    apiType: rest
+    autoDomain: true
+    enabled: true
+  buckets:
+    staticFilesBucketName: ${self:provider.stage}-${self:service}-static
+  s3Sync:
+    - bucketName: ${self:custom.buckets.staticFilesBucketName}
+      localDir: static
+      deleteRemoved: false
+
 functions:
-  echo:
-    handler: api/index.echo
+  api:
+    handler: api/index.api
+    reservedConcurrency: 4
+    timeout: 30
+    role: ApiRoleV1
     events:
       - http:
-          path: /
-          method: get
+          path: /api/v1/{any+}
+          method: ANY
+          cors: true
+          caching:
+            enabled: false
+
+resources:
+  Resources:
+
+    ApiRoleV1:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${self:service}-${self:provider.stage}-ApiRoleV1
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+            - Effect: Allow
+              Principal:
+                Service:
+                  - edgelambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: ${self:service}-${self:provider.stage}-ApiPolicyV1
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - logs:*
+                  Resource: "*"
+                - Effect: "Allow"
+                  Action:
+                    - s3:ListBucket
+                    - s3:GetObject
+                  Resource: "arn:aws:s3:::${self:custom.buckets.staticFilesBucketName}/*"
+
+    SiteStaticBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.buckets.staticFilesBucketName}
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedHeaders:
+                - '*'
+              AllowedMethods:
+                - GET
+                - HEAD
+                - PUT
+                - POST
+                - DELETE
+              MaxAge: 3000
+              ExposedHeaders:
+                - x-amz-server-side-encryption
+                - x-amz-request-id
+                - x-amz-id-2
+    SiteStaticBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: SiteStaticBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement: [
+            {
+              Action: ['s3:GetObject'],
+              Effect: 'Allow',
+              Resource: {
+                Fn::Join: ['', ['arn:aws:s3:::', { Ref: 'SiteStaticBucket' }, '/*']],
+              },
+              Principal: '*'
+            },
+          ]
