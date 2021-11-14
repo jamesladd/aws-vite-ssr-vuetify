@@ -1,0 +1,22 @@
+service: aws-vite-ssr-vuetify
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  versionFunctions: false
+  lambdaHashingVersion: '20201221'
+  apiGateway:
+    shouldStartNameWithService: true
+  environment: ${file(env.yml):${self:provider.stage}}
+
+functions:
+  hello:
+    handler: api/handler.hello
+    events:
+      - http:
+          path: /
+          method: get
