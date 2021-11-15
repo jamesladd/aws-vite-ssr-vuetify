@@ -25,3 +25,5 @@ Deploy the Server Side Rendered (SSR) application
 ```
 yarn deploy
 ```
+Open your browser to https://<yourdomain> and you should see your Server Side Rendered application.
+**Note this is not being cached.**
