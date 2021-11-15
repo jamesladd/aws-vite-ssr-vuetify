@@ -1,6 +1,7 @@
 'use strict'
 
 module.exports.api = async (event) => {
+  console.log('api', event, process.env)
   return {
     statusCode: 200,
     body: JSON.stringify(
