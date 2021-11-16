@@ -54,6 +54,45 @@ functions:
 resources:
   Resources:
 
+    SsrDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Comment: ${self:provider.stage} ${self:service}
+          DefaultCacheBehavior:
+            TargetOriginId: ${self:service}-${self:provider.stage}-Origin
+            ViewerProtocolPolicy: 'redirect-to-https'
+            DefaultTTL: 30
+            AllowedMethods:
+              - 'GET'
+              - 'HEAD'
+              - 'OPTIONS'
+              - 'PUT'
+              - 'PATCH'
+              - 'POST'
+              - 'DELETE'
+            CachedMethods:
+              - 'HEAD'
+              - 'GET'
+              - 'OPTIONS'
+            ForwardedValues:
+              QueryString: true
+              Cookies:
+                Forward: none
+          Enabled: true
+          Origins:
+            - Id: ${self:service}-${self:provider.stage}-Origin
+              DomainName:
+                Fn::Join:
+                  - ""
+                  - - "Ref": "ApiGatewayRestApi"
+                    - ".execute-api.${self:provider.region}.amazonaws.com"
+              OriginPath: /dev
+              CustomOriginConfig:
+                HTTPPort: 80
+                HTTPSPort: 443
+                OriginProtocolPolicy: https-only
+
     SsrRoleV1:
       Type: AWS::IAM::Role
       Properties:
