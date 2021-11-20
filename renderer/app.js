@@ -1,4 +1,4 @@
-import { createSSRApp, defineComponent, h, markRaw } from 'vue'
+import { createSSRApp, defineComponent, h, markRaw, reactive } from 'vue'
 import PageShell from './PageShell.vue'
 import { setPageContext } from './usePageContext'
 
@@ -36,7 +36,7 @@ function createApp(pageContext) {
   app.use(vuetify())
 
   // We make `pageContext` available from any Vue component
-  setPageContext(app, pageContext)
+  setPageContext(app, reactive(pageContext))
 
   return app
 }
