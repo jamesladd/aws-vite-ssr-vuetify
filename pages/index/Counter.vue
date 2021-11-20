@@ -1,5 +1,5 @@
 <template>
-  <button type="button" @click="state.count++">Counter {{ state.count }}</button>
+  <v-btn class="ml-4" @click="state.count++">Counter {{ state.count }}</v-btn>
 </template>
 
 <script setup>
