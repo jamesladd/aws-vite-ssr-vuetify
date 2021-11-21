@@ -1,10 +1,13 @@
-export { initMeta }
+export { inBrowser, initMeta }
+
+function inBrowser() {
+  return typeof window !== 'undefined'
+}
 
 function initMeta(pageContext) {
   console.log('initMeta', pageContext)
-  if (typeof document !== 'undefined') {
-    document.title = getPageTitle(pageContext)
-  }
+  if (!inBrowser()) return;
+  document.title = getPageTitle(pageContext)
 }
 
 function getPageTitle(pageContext) {

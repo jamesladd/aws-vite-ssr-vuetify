@@ -1,3 +1,5 @@
+import { inBrowser } from './helpers.js'
+
 export { onTransitionStart, onTransitionEnd, onHydrationEnd }
 
 function onTransitionStart() {
@@ -20,8 +22,7 @@ function createEvent(name, detail) {
 }
 
 function sendEvent(name, details) {
-  if (typeof document !== 'undefined') {
-    const event = createEvent(name, details || {})
-    document.dispatchEvent(event)
-  }
+  if (!inBrowser()) return;
+  const event = createEvent(name, details || {})
+  document.dispatchEvent(event)
 }
